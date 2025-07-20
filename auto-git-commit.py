@@ -83,6 +83,32 @@ DEFAULT_COMMIT_MESSAGE = "chore: Claude Codeによる自動修正"
 DEFAULT_MODEL = "gemini-2.5-flash"
 
 
+def strip_quotes(text):
+    """文字列の前後のクォート（シングル、ダブル、バック）を除去する
+    
+    Args:
+        text (str): 処理対象の文字列
+    
+    Returns:
+        str: クォートを除去した文字列
+    """
+    if not text:
+        return text
+    
+    # 前後の空白を除去
+    text = text.strip()
+    
+    # クォート文字のリスト
+    quotes = ["'", '"', "`"]
+    
+    # 前後に同じクォートがある場合のみ除去
+    for quote in quotes:
+        if len(text) >= 2 and text.startswith(quote) and text.endswith(quote):
+            return text[1:-1].strip()
+    
+    return text
+
+
 def run_command(cmd, cwd=None, capture_output=True, shell=True):
     """シェルコマンドを実行して結果を返す
 
@@ -221,7 +247,7 @@ def main():
         )
 
         if result.returncode == 0 and result.stdout.strip():
-            commit_message = result.stdout.strip()
+            commit_message = strip_quotes(result.stdout.strip())
             gemini_success = True  # gemini成功
             print("geminiによるメッセージ生成成功", file=sys.stderr)
         else:
