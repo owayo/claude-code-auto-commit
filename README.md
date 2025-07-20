@@ -1,11 +1,11 @@
 # claude-code-auto-commit
 
-Claude Codeのhook機能と連携して、変更内容に基づいて自動的にGitコミットを実行するツールです。Gemini APIを使用してコミットメッセージを生成し、Conventional Commitsの形式でコミットを作成します。
+Claude Codeのhook機能と連携して、変更内容に基づいて自動的にGitコミットを実行するツールです。Gemini CLIを使用してコミットメッセージを生成し、Conventional Commitsの形式でコミットを作成します。
 
 ## 機能
 
 - 変更内容を自動検出してGitコミットを実行
-- Gemini APIを使用した適切なコミットメッセージの自動生成
+- Gemini CLIを使用した適切なコミットメッセージの自動生成
 - Conventional Commits形式のサポート
 - 環境変数による言語とデフォルトメッセージのカスタマイズ
 - 大きな変更に対するタイムアウトとサイズ制限
