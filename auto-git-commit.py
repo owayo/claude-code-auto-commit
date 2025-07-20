@@ -5,6 +5,11 @@ Claude Codeのhook機能と連携して、変更内容に基づいて自動的�
 Gemini APIを使用してコミットメッセージを生成し、Conventional Commitsの形式で
 コミットを作成します。
 
+機能:
+- .gitignoreに記載されたファイルは自動的に除外されます
+- バイナリファイルの差分はコミットメッセージ生成時に除外されます
+- コミットメッセージの前後のクォートを自動的に除去します
+
 使用方法:
     Claude Codeの設定ファイル(~/.claude/settings.json)でStopフックとして設定します。
 
@@ -109,6 +114,56 @@ def strip_quotes(text):
     return text
 
 
+def filter_binary_diff(diff_text):
+    """git diffの出力からバイナリファイルの差分を除外する
+    
+    Args:
+        diff_text (str): git diffの出力
+    
+    Returns:
+        str: バイナリファイルの差分を除外した出力
+    """
+    if not diff_text:
+        return diff_text
+    
+    lines = diff_text.split('\n')
+    filtered_lines = []
+    i = 0
+    
+    while i < len(lines):
+        line = lines[i]
+        
+        # diff --git から始まるブロックを検出
+        if line.startswith('diff --git'):
+            # このブロックの開始位置を記録
+            block_start = i
+            i += 1
+            
+            # ブロックの終わりまたはバイナリファイルの検出
+            is_binary = False
+            while i < len(lines) and not lines[i].startswith('diff --git'):
+                if 'Binary files' in lines[i] and 'differ' in lines[i]:
+                    is_binary = True
+                    break
+                i += 1
+            
+            # バイナリファイルでない場合はブロックを保持
+            if not is_binary:
+                for j in range(block_start, i):
+                    filtered_lines.append(lines[j])
+            else:
+                # バイナリファイルの場合、次のdiffブロックまでスキップ
+                while i < len(lines) and not lines[i].startswith('diff --git'):
+                    i += 1
+                i -= 1  # ループの最後でi+=1されるため
+        else:
+            filtered_lines.append(line)
+        
+        i += 1
+    
+    return '\n'.join(filtered_lines)
+
+
 def run_command(cmd, cwd=None, capture_output=True, shell=True):
     """シェルコマンドを実行して結果を返す
 
@@ -200,6 +255,7 @@ def main():
     success, changes, _ = run_command("git diff --cached --stat")
     if not changes:
         # ステージングされていない場合は、すべての変更をステージング
+        # git add -A は .gitignore に記載されたファイルを自動的に除外する
         run_command("git add -A", capture_output=False)
         success, changes, _ = run_command("git diff --cached --stat")
 
@@ -210,6 +266,12 @@ def main():
     success, detailed_changes, _ = run_command("git diff --cached")
     print(
         f"git diff --cached完了 (サイズ: {len(detailed_changes)}文字)", file=sys.stderr
+    )
+    
+    # バイナリファイルの差分を除外
+    detailed_changes = filter_binary_diff(detailed_changes)
+    print(
+        f"バイナリファイル除外後 (サイズ: {len(detailed_changes)}文字)", file=sys.stderr
     )
 
     # detailed_changesが大きすぎる場合は制限する（最大5000文字）
