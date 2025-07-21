@@ -91,78 +91,78 @@ DEFAULT_MODEL = "gemini-2.5-flash"
 
 def strip_quotes(text):
     """文字列の前後のクォート（シングル、ダブル、バック）を除去する
-    
+
     Args:
         text (str): 処理対象の文字列
-    
+
     Returns:
         str: クォートを除去した文字列
     """
     if not text:
         return text
-    
+
     # 前後の空白を除去
     text = text.strip()
-    
+
     # クォート文字のリスト
     quotes = ["'", '"', "`"]
-    
+
     # 前後に同じクォートがある場合のみ除去
     for quote in quotes:
         if len(text) >= 2 and text.startswith(quote) and text.endswith(quote):
             return text[1:-1].strip()
-    
+
     return text
 
 
 def filter_binary_diff(diff_text):
     """git diffの出力からバイナリファイルの差分を除外する
-    
+
     Args:
         diff_text (str): git diffの出力
-    
+
     Returns:
         str: バイナリファイルの差分を除外した出力
     """
     if not diff_text:
         return diff_text
-    
-    lines = diff_text.split('\n')
+
+    lines = diff_text.split("\n")
     filtered_lines = []
     i = 0
-    
+
     while i < len(lines):
         line = lines[i]
-        
+
         # diff --git から始まるブロックを検出
-        if line.startswith('diff --git'):
+        if line.startswith("diff --git"):
             # このブロックの開始位置を記録
             block_start = i
             i += 1
-            
+
             # ブロックの終わりまたはバイナリファイルの検出
             is_binary = False
-            while i < len(lines) and not lines[i].startswith('diff --git'):
-                if 'Binary files' in lines[i] and 'differ' in lines[i]:
+            while i < len(lines) and not lines[i].startswith("diff --git"):
+                if "Binary files" in lines[i] and "differ" in lines[i]:
                     is_binary = True
                     break
                 i += 1
-            
+
             # バイナリファイルでない場合はブロックを保持
             if not is_binary:
                 for j in range(block_start, i):
                     filtered_lines.append(lines[j])
             else:
                 # バイナリファイルの場合、次のdiffブロックまでスキップ
-                while i < len(lines) and not lines[i].startswith('diff --git'):
+                while i < len(lines) and not lines[i].startswith("diff --git"):
                     i += 1
                 i -= 1  # ループの最後でi+=1されるため
         else:
             filtered_lines.append(line)
-        
+
         i += 1
-    
-    return '\n'.join(filtered_lines)
+
+    return "\n".join(filtered_lines)
 
 
 def run_command(cmd, cwd=None, capture_output=True, shell=True):
@@ -218,7 +218,7 @@ def main():
     default_commit_msg = os.environ.get(
         "CLAUDE_CODE_DEFAULT_COMMIT_MESSAGE", DEFAULT_COMMIT_MESSAGE
     )
-    
+
     # 自動push設定を環境変数から取得（デフォルトは0: pushしない）
     auto_push = os.environ.get("CLAUDE_CODE_AUTO_PUSH", "0") == "1"
 
@@ -271,7 +271,7 @@ def main():
     print(
         f"git diff --cached完了 (サイズ: {len(detailed_changes)}文字)", file=sys.stderr
     )
-    
+
     # バイナリファイルの差分を除外
     detailed_changes = filter_binary_diff(detailed_changes)
     print(
@@ -362,7 +362,7 @@ def main():
         if auto_push:
             print("")
             print("🚀 自動pushを実行中...")
-            
+
             # 現在のブランチ名を取得
             success, branch, _ = run_command("git branch --show-current")
             if success and branch:
@@ -375,7 +375,7 @@ def main():
                     # pushが失敗してもコミット自体は成功しているので続行
             else:
                 print("❌ 現在のブランチを取得できませんでした", file=sys.stderr)
-        
+
         # geminiが失敗した場合はexit 1
         if not gemini_success:
             print(
