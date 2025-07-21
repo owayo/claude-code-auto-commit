@@ -35,6 +35,7 @@ Gemini APIを使用してコミットメッセージを生成し、Conventional 
     CLAUDE_CODE_COMMIT_LANGUAGE: コミットメッセージの言語（デフォルト: 日本語）
     CLAUDE_CODE_DEFAULT_COMMIT_MESSAGE: gemini失敗時のデフォルトメッセージ
                                        （デフォルト: chore: Claude Codeによる自動修正）
+    CLAUDE_CODE_AUTO_PUSH: 自動push機能の有効/無効（0/1、デフォルト: 0）
 
 終了コード:
     0: 正常終了（変更なしまたはgemini成功でコミット完了）
@@ -217,6 +218,9 @@ def main():
     default_commit_msg = os.environ.get(
         "CLAUDE_CODE_DEFAULT_COMMIT_MESSAGE", DEFAULT_COMMIT_MESSAGE
     )
+    
+    # 自動push設定を環境変数から取得（デフォルトは0: pushしない）
+    auto_push = os.environ.get("CLAUDE_CODE_AUTO_PUSH", "0") == "1"
 
     # 入力データを読み込む
     input_data_str = sys.stdin.read()
@@ -354,6 +358,24 @@ def main():
             print("⚠️  まだコミットされていない変更があります:")
             run_command("git status --short", capture_output=False)
 
+        # 自動pushが有効な場合
+        if auto_push:
+            print("")
+            print("🚀 自動pushを実行中...")
+            
+            # 現在のブランチ名を取得
+            success, branch, _ = run_command("git branch --show-current")
+            if success and branch:
+                # リモートへプッシュ
+                success, output, error = run_command(f"git push origin {branch}")
+                if success:
+                    print(f"✅ pushが成功しました: origin/{branch}")
+                else:
+                    print(f"❌ pushに失敗しました: {error}", file=sys.stderr)
+                    # pushが失敗してもコミット自体は成功しているので続行
+            else:
+                print("❌ 現在のブランチを取得できませんでした", file=sys.stderr)
+        
         # geminiが失敗した場合はexit 1
         if not gemini_success:
             print(
