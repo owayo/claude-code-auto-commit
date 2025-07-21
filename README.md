@@ -9,6 +9,7 @@ Claude Codeのhook機能と連携して、変更内容に基づいて自動的�
 - Conventional Commits形式のサポート
 - 環境変数による言語とデフォルトメッセージのカスタマイズ
 - 大きな変更に対するタイムアウトとサイズ制限
+- オプションでコミット後の自動push機能
 
 ## 必要条件
 
@@ -22,6 +23,7 @@ Claude Codeのhook機能と連携して、変更内容に基づいて自動的�
 |---------|------|-------------|
 | `CLAUDE_CODE_COMMIT_LANGUAGE` | コミットメッセージの言語 | `日本語` |
 | `CLAUDE_CODE_DEFAULT_COMMIT_MESSAGE` | gemini失敗時のデフォルトメッセージ | `chore: Claude Codeによる自動修正` |
+| `CLAUDE_CODE_AUTO_PUSH` | 自動push機能の有効/無効（0/1） | `0`（無効） |
 
 ## 設定方法
 
@@ -90,6 +92,27 @@ Claude Codeの設定ファイル(`~/.claude/settings.json`)でStopフックと�
 }
 ```
 
+### 自動pushを有効化する場合
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLAUDE_CODE_AUTO_PUSH='1' python3 /path/to/claude-code-auto-commit/auto-git-commit.py",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
 ## 動作の仕組み
 
 1. Claude Codeが停止時にhookを実行
@@ -97,6 +120,7 @@ Claude Codeの設定ファイル(`~/.claude/settings.json`)でStopフックと�
 3. 変更があるかを確認
 4. 変更内容を取得してgeminiでコミットメッセージを生成
 5. 生成されたメッセージでGitコミットを実行
+6. `CLAUDE_CODE_AUTO_PUSH=1`の場合、自動的にリモートへpush
 
 ## 終了コード
 
