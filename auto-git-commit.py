@@ -309,7 +309,7 @@ def main():
             ["gemini", "-m", DEFAULT_MODEL, "-p", prompt],
             capture_output=True,
             text=True,
-            timeout=20,
+            timeout=25,
         )
 
         if result.returncode == 0 and result.stdout.strip():
@@ -325,7 +325,7 @@ def main():
             )
 
     except subprocess.TimeoutExpired:
-        print("警告: geminiコマンドがタイムアウトしました（20秒）", file=sys.stderr)
+        print("警告: geminiコマンドがタイムアウトしました（25秒）", file=sys.stderr)
         print(
             f"デフォルトメッセージを使用します: {default_commit_msg}",
             file=sys.stderr,
