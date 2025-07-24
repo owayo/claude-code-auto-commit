@@ -44,7 +44,6 @@ Gemini APIを使用してコミットメッセージを生成し、Conventional 
 
 import json
 import os
-import shlex
 import subprocess
 import sys
 
@@ -169,7 +168,7 @@ def run_command(cmd, cwd=None, capture_output=True, shell=True):
     """シェルコマンドを実行して結果を返す
 
     Args:
-        cmd (str): 実行するコマンド文字列
+        cmd (str or list): 実行するコマンド文字列またはリスト
         cwd (str, optional): 作業ディレクトリ。デフォルトはNone
         capture_output (bool, optional): 出力をキャプチャするか。デフォルトはTrue
         shell (bool, optional): シェル経由で実行するか。デフォルトはTrue
@@ -338,9 +337,8 @@ def main():
         )
 
     # コミットを実行
-    # shlex.quoteでシェルエスケープ
-    escaped_message = shlex.quote(commit_message)
-    success, output, error = run_command(f"git commit -m {escaped_message}")
+    # リスト形式でコマンドを渡すことでエスケープの問題を回避
+    success, output, error = run_command(["git", "commit", "-m", commit_message], shell=False)
     if success:
         print(f"✅ 自動コミット成功: {commit_message}")
 
