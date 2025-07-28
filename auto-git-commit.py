@@ -44,6 +44,7 @@ Gemini APIを使用してコミットメッセージを生成し、Conventional 
 
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -316,10 +317,14 @@ def main():
             output_lines = result.stdout.strip().split('\n')
             conventional_message = None
             
-            # Conventional Commitsのプレフィックスで始まる行を探す
+            # Conventional Commits形式のパターン: <空白以外のASCII文字>: 
+            # 例: feat:, fix:, custom-type:, BREAKING-CHANGE: など
+            pattern = re.compile(r'^[\x21-\x7E]+:\s')
+            
+            # パターンにマッチする行を探す
             for line in output_lines:
                 line = line.strip()
-                if any(line.startswith(prefix) for prefix in CONVENTIONAL_PREFIXES):
+                if pattern.match(line):
                     conventional_message = line
                     break
             
