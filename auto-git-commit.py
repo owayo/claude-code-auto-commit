@@ -312,9 +312,27 @@ def main():
         )
 
         if result.returncode == 0 and result.stdout.strip():
-            commit_message = strip_quotes(result.stdout.strip())
-            gemini_success = True  # gemini成功
-            print("geminiによるメッセージ生成成功", file=sys.stderr)
+            # Geminiの出力から不要な部分を除去してConventional Commits形式のみを抽出
+            output_lines = result.stdout.strip().split('\n')
+            conventional_message = None
+            
+            # Conventional Commitsのプレフィックスで始まる行を探す
+            for line in output_lines:
+                line = line.strip()
+                if any(line.startswith(prefix) for prefix in CONVENTIONAL_PREFIXES):
+                    conventional_message = line
+                    break
+            
+            if conventional_message:
+                commit_message = strip_quotes(conventional_message)
+                gemini_success = True  # gemini成功
+                print("geminiによるメッセージ生成成功", file=sys.stderr)
+            else:
+                print(
+                    "警告: geminiの出力からConventional Commits形式のメッセージが見つかりませんでした。デフォルトメッセージを使用します。",
+                    file=sys.stderr,
+                )
+                print(f"geminiの出力: {result.stdout.strip()}", file=sys.stderr)
         else:
             if result.stderr:
                 print(f"geminiエラー: {result.stderr}", file=sys.stderr)
